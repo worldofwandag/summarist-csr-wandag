@@ -12,7 +12,14 @@ import { useRouter } from "next/navigation"; // For routing
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params); // Unwrap `params` using `use()`
   const [book, setBook] = useState<BookTypes | null>(null); // State to store book data
+  const [isLoading, setIsLoading] = useState(true); // State to track loading
   const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn); // Check if user is logged in
+  const isSubscribed = useSelector(
+    (state: RootState) => state.user.isSubscribed
+  ); // Check if user is subscribed
+  const isPlusSubscribed = useSelector(
+    (state: RootState) => state.user.isPlusSubscribed
+  ); // Check if user is plus subscribed
   const { loginModalOpen } = useSelector((state: RootState) => state.modal);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter(); // For navigation
@@ -30,25 +37,164 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         setBook(book); // Update state with fetched book data
       } catch (error) {
         console.error("Failed to fetch book:", error);
+      } finally {
+        setIsLoading(false); // Set loading state to false after fetching
       }
     };
 
     fetchBook();
   }, [id]); // Dependency array ensures this runs when `id` changes
 
-  if (!book) {
-    return <div>Loading...</div>; // Show a loading state while fetching data
+  if (isLoading) {
+    // Skeleton loading state
+    return (
+      <div className="wrapper">
+        <div className="row">
+          <div className="container">
+            <div className="inner__wrapper">
+              <div className="inner__book">
+                {/* Skeleton for title */}
+                <div
+                  className="skeleton"
+                  style={{ height: "48px", width: "60%", marginBottom: "16px" }}
+                ></div>
+                {/* Skeleton for author */}
+                <div
+                  className="skeleton"
+                  style={{ height: "24px", width: "40%", marginBottom: "16px" }}
+                ></div>
+                {/* Skeleton for subtitle */}
+                <div
+                  className="skeleton"
+                  style={{ height: "20px", width: "50%", marginBottom: "24px" }}
+                ></div>
+                {/* Skeleton for descriptions in 2 rows and 2 columns */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                    marginBottom: "40px",
+                  }}
+                >
+                  <div
+                    className="skeleton"
+                    style={{ height: "20px", width: "60%" }} // First skeleton box
+                  ></div>
+                  <div
+                    className="skeleton"
+                    style={{ height: "20px", width: "60%" }} // Second skeleton box
+                  ></div>
+                </div>
+                {/* Skeleton for Read and Listen buttons side by side */}
+                <div
+                  style={{ display: "flex", gap: "16px", marginBottom: "16px" }}
+                >
+                  <div
+                    className="skeleton"
+                    style={{ height: "48px", width: "21%" }}
+                  ></div>
+                  <div
+                    className="skeleton"
+                    style={{ height: "48px", width: "21%" }}
+                  ></div>
+                </div>
+                {/* Skeleton for icon and text side by side */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    marginBottom: "36px",
+                  }}
+                >
+                  <div
+                    className="skeleton"
+                    style={{ height: "24px", width: "3%" }}
+                  ></div>
+                  <div
+                    className="skeleton"
+                    style={{ height: "20px", width: "30%" }}
+                  ></div>
+                </div>
+                {/* Skeleton for first secondary title */}
+                <div
+                  className="skeleton"
+                  style={{ height: "28px", width: "30%", marginBottom: "16px" }}
+                ></div>
+                {/* Skeleton for tags */}
+                <div
+                  className="skeleton"
+                  style={{ height: "48px", width: "25%", marginBottom: "16px" }}
+                ></div>
+                {/* Skeleton for book description */}
+                <div
+                  className="skeleton"
+                  style={{
+                    height: "200px",
+                    width: "100%",
+                    marginBottom: "24px",
+                  }}
+                ></div>
+                {/* Skeleton for second secondary title */}
+                <div
+                  className="skeleton"
+                  style={{ height: "28px", width: "30%", marginBottom: "16px" }}
+                ></div>
+                {/* Skeleton for author description */}
+                <div
+                  className="skeleton"
+                  style={{
+                    height: "200px",
+                    width: "100%",
+                    marginBottom: "24px",
+                  }}
+                ></div>
+              </div>
+              <div className="inner-book--img-wrapper">
+                {/* Skeleton for book image */}
+                <div
+                  className="book__image--skeleton"
+                  style={{
+                    height: "300px",
+                    width: "300px",
+                    minWidth: "300px",
+                    backgroundColor: "#e4e4e4",
+                    borderRadius: "8px",
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleOpenLoginModal = () => {
     dispatch(openLoginModal()); // Dispatch the action to open the login modal
   };
 
+  if (!book) {
+    return null; // Or a fallback UI
+  }
+
   const handleReadOrListen = () => {
     if (!isLoggedIn) {
       handleOpenLoginModal(); // Open login modal if user is not logged in
-    } else {
-      router.push(`/player/${book.id}`); // Navigate to player page if user is logged in
+    } else if (!book.subscriptionRequired) {
+      router.push(`/player/${book.id}`); // Route to player if subscription is not required
+    } else if (
+      book.subscriptionRequired &&
+      (isSubscribed || isPlusSubscribed)
+    ) {
+      router.push(`/player/${book.id}`); // Route to player if subscription is required and user is subscribed
+    } else if (
+      book.subscriptionRequired &&
+      !isSubscribed &&
+      !isPlusSubscribed
+    ) {
+      router.push(`/choose-plan`); // Route to choose plan if subscription is required but user is not subscribed
     }
   };
 
@@ -61,9 +207,9 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   };
 
   return (
-    
     <div className="wrapper">
       {loginModalOpen && <Modal />}
+
       <div className="row">
         <audio src={book.audioLink}></audio>
         <div className="container">
@@ -159,7 +305,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 </div>
               </div>
               <div className="inner-book__read--btn-wrapper">
-                <button className="inner-book__read--btn" onClick={handleReadOrListen}>
+                <button
+                  className="inner-book__read--btn"
+                  onClick={handleReadOrListen}
+                >
                   <div className="inner-book__read--icon">
                     <svg
                       stroke="currentColor"
@@ -175,7 +324,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   </div>
                   <div className="inner-book__read--text">Read</div>
                 </button>
-                <button className="inner-book__read--btn" onClick={handleReadOrListen}>
+                <button
+                  className="inner-book__read--btn"
+                  onClick={handleReadOrListen}
+                >
                   <div className="inner-book__read--icon">
                     <svg
                       stroke="currentColor"
@@ -192,7 +344,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   <div className="inner-book__read--text">Listen</div>
                 </button>
               </div>
-              <div className="inner-book__bookmark" onClick={handleAddToLibrary}>
+              <div
+                className="inner-book__bookmark"
+                onClick={handleAddToLibrary}
+              >
                 <div className="inner-book__bookmark--icon">
                   <svg
                     stroke="currentColor"

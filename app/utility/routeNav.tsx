@@ -9,6 +9,8 @@ export const routeNav = (router: any): void => {
       router.push("/for-you"); // Navigate to "For You" page
     } else if (currentPath.startsWith("/book/")) {
       router.push(currentPath); // Stay on the current book page
+    } else if (currentPath.startsWith("/settings")) {
+      router.push(currentPath); // Stay on the current book page
     } else {
       router.push("/for-you"); // Default fallback
     }

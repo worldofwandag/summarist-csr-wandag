@@ -4,13 +4,13 @@ import React, { useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/app/redux/store"; // For TypeScript
 import { openLoginModal } from "@/app/redux/modalSlice";
-import Modal from "@/app/components/Modal"; // Import the Modal component
 
 interface AudioPlayerProps {
   audioLink: string;
   imageLink: string;
   title: string;
   author: string;
+  isLoading: boolean;
 }
 
 export default function AudioPlayer({
@@ -18,11 +18,10 @@ export default function AudioPlayer({
   imageLink,
   title,
   author,
+  isLoading,
 }: AudioPlayerProps) {
   const dispatch = useDispatch<AppDispatch>();
   const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn); // Check if user is logged in
-  const { loginModalOpen } = useSelector((state: RootState) => state.modal);
-
   const audioRef = useRef<HTMLAudioElement | null>(null); // Ref for the audio element
   const [isPlaying, setIsPlaying] = useState(false); // State to track if audio is playing
   const [currentTime, setCurrentTime] = useState(0); // State for current time
@@ -86,9 +85,11 @@ export default function AudioPlayer({
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
+  // if (isLoading) {
+
   return (
     <div className="audio__wrapper">
-      {loginModalOpen && <Modal />}
+      
       <audio
         ref={audioRef}
         src={audioLink}
@@ -99,17 +100,47 @@ export default function AudioPlayer({
           setDuration(audioRef.current ? audioRef.current.duration : 0)
         }
       ></audio>
-      <div className="audio__track--wrapper">
-        <figure className="audio__track--image-mask">
-          <figure className="h-[48px] w-[48px] min-w-[48px]">
-            <img src={imageLink} alt={title} />
+
+      {isLoading ? (
+        <div className="audio__track--wrapper">
+          <figure className="audio__track--image-mask">
+            <div
+              className="skeleton"
+              style={{ width: "48px", height: "48px" }}
+            ></div>
           </figure>
-        </figure>
-        <div className="audio__track--details-wrapper">
-          <div className="audio__track--title">{title}</div>
-          <div className="audio__track--author">{author}</div>
+          <div className="audio__track--details-wrapper">
+            <div
+              className="skeleton"
+              style={{
+                width: "50px",
+                height: "16px",
+                marginBottom: "8px",
+              }}
+            ></div>
+            <div
+              className="skeleton"
+              style={{
+                width: "100px",
+                height: "16px",
+              }}
+            ></div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="audio__track--wrapper">
+          <figure className="audio__track--image-mask">
+            <figure className="h-[48px] w-[48px] min-w-[48px]">
+              <img src={imageLink || "/placeholder-image.png"} />
+            </figure>
+          </figure>
+          <div className="audio__track--details-wrapper">
+            <div className="audio__track--title">{title || "Loading..."}</div>
+            <div className="audio__track--author">{author || "Loading..."}</div>
+          </div>
+        </div>
+      )}
+
       <div className="audio__controls--wrapper">
         <div className="audio__controls">
           <button
