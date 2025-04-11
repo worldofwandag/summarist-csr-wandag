@@ -11,6 +11,8 @@ export const routeNav = (router: any): void => {
       router.push(currentPath); // Stay on the current book page
     } else if (currentPath.startsWith("/settings")) {
       router.push(currentPath); // Stay on the current book page
+    } else if (currentPath.startsWith("/player")) {
+      router.push(currentPath); // Stay on the current book page
     } else {
       router.push("/for-you"); // Default fallback
     }

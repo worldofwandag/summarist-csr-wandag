@@ -22,7 +22,7 @@ function Sidebar(): React.JSX.Element {
     dispatch(setFontSize(size)); // Update font size in Redux store
   };
 
-  const pathname = usePathname();
+  const pathname = usePathname() || ""; // Used to show font size changer only on player page and shift the sidebar up only on player page
 
   const handleLogoutUser = async () => {
     try {
