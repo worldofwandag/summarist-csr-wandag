@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { UserTypes } from "../types/UserTypes";
+import { fetchSubscriptionState } from "../utility/auth";
+
 
 // Define the UserState interface
 interface UserState {
@@ -76,6 +78,12 @@ const userSlice = createSlice({
     setPlusSubscribed: (state, action: PayloadAction<boolean>) => {
       state.isPlusSubscribed = action.payload;
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(fetchSubscriptionState.fulfilled, (state, action) => {
+      state.isSubscribed = action.payload.isSubscribed;
+      state.isPlusSubscribed = action.payload.isPlusSubscribed;
+    });
   },
 });
 

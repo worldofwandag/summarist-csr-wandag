@@ -3,49 +3,64 @@ import Image from "next/image";
 import pricing from "../assets/pricing-top.webp";
 import React, { useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store"; // for TS
 
 const Page = () => {
 // Set "Premium Plus Yearly" as the default active plan
 const [activePlan, setActivePlan] = useState<"premium plus annual" | "premium monthly">("premium plus annual");
+const user = useSelector((state: RootState) => state.user.user);
 
-  const handleCheckout = async () => {
-    if (!activePlan) {
-      alert("Please select a plan before proceeding.");
+const handleCheckout = async () => {
+  if (!activePlan) {
+    alert("Please select a plan before proceeding.");
+    return;
+  }
+
+  try {
+    console.log("Starting checkout process for plan:", activePlan);
+
+    const lookupKey = activePlan;
+    const email = user?.email; // Retrieve the user's email from Redux or context
+
+    if (!email) {
+      alert("User email is required to proceed with the checkout.");
       return;
     }
 
-    try {
-      const response = await fetch("/api/createCheckoutSession", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          lookupKey: activePlan,
-          productId: "prod_S6k5DaPSN3KZiV",
-        }),
-      });
+    console.log("Sending request with:", { lookupKey, email });
 
-      const { sessionId } = await response.json();
+    const response = await fetch("/api/createCheckoutSessions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ lookupKey, email }),
+    });
 
-      if (!sessionId) {
-        throw new Error("Failed to create checkout session.");
-      }
+    console.log("API response status:", response.status);
 
-      // Ensure the publishable key is defined
-      if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-        throw new Error("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not defined in environment variables");
-      }
-
-      // Redirect to Stripe Checkout
-      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-      await stripe?.redirectToCheckout({ sessionId });
-    } catch (error) {
-      console.error("Error during checkout:", error);
-      alert("Something went wrong. Please try again.");
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error:", errorData); // Log the error response
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
 
+    const { sessionId } = await response.json();
+
+    if (!sessionId) {
+      throw new Error("Failed to create checkout session.");
+    }
+
+    console.log("Redirecting to Stripe Checkout with sessionId:", sessionId);
+
+    const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+    await stripe?.redirectToCheckout({ sessionId });
+  } catch (error) {
+    console.error("Error during checkout:", error);
+    alert("Something went wrong. Please try again.");
+  }
+};
   return (
     <div className="plan">
       <div className="plan__header--wrapper">

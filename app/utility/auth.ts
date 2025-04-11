@@ -13,6 +13,7 @@ import {
 } from "firebase/auth";
 import { AppDispatch } from "../redux/store"; //   for typescript
 import { setSummaristLogin, setGoogleLogin, setGuestLogin, setLoggedOut } from "../redux/userSlice";
+import { createAsyncThunk } from "@reduxjs/toolkit";
 
 const provider = new GoogleAuthProvider();
 // auth.languageCode = "en";
@@ -179,5 +180,25 @@ export const forgotPassword = async (email: string): Promise<void> => {
     throw error; // Re-throw the error for handling in the calling function
   }
 };
+
+
+
+// Fetch subscription state from the database
+export const fetchSubscriptionState = createAsyncThunk(
+  "user/fetchSubscriptionState",
+  async (email: string) => {
+    try {
+      const response = await fetch(`/api/getSubscriptionState?email=${email}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch subscription state: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return data; // { isSubscribed: boolean, isPlusSubscribed: boolean }
+    } catch (error) {
+      console.error("Error fetching subscription state:", error);
+      throw error;
+    }
+  }
+);
 
 
