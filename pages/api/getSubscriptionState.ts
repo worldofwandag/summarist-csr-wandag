@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import {getSubscriptionStateFromDatabase} from "../../app/firebase/firebaseAdmin"; // Adjust the import path as necessary
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log("request handler", req);
   if (req.method === "GET") {
     const { email } = req.query;
 
