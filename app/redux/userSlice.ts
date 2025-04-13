@@ -2,7 +2,6 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { UserTypes } from "../types/UserTypes";
 import { fetchSubscriptionState } from "../utility/auth";
 
-
 // Define the UserState interface
 interface UserState {
   user: UserTypes | null; // The current user object or null if not logged in
@@ -30,11 +29,12 @@ const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUser(state, action) {
+    // Action to set the user object
+    setUser(state, action: PayloadAction<UserTypes | null>) {
       state.user = action.payload;
     },
     // Action for summaristLogin
-    setSummaristLogin: (state, action: PayloadAction<UserTypes>) => {
+    setSummaristLogin(state, action: PayloadAction<UserTypes>) {
       state.user = action.payload;
       state.isLoggedIn = true;
       state.isSummaristLoggedIn = true;
@@ -44,7 +44,7 @@ const userSlice = createSlice({
       state.isPlusSubscribed = false; // Reset plus subscription state
     },
     // Action for googleLogin
-    setGoogleLogin: (state, action: PayloadAction<UserTypes>) => {
+    setGoogleLogin(state, action: PayloadAction<UserTypes>) {
       state.user = action.payload;
       state.isLoggedIn = true;
       state.isSummaristLoggedIn = false;
@@ -54,7 +54,7 @@ const userSlice = createSlice({
       state.isPlusSubscribed = false; // Reset plus subscription state
     },
     // Action for guestLogin
-    setGuestLogin: (state, action: PayloadAction<UserTypes>) => {
+    setGuestLogin(state, action: PayloadAction<UserTypes>) {
       state.user = action.payload;
       state.isLoggedIn = true;
       state.isSummaristLoggedIn = false;
@@ -64,7 +64,7 @@ const userSlice = createSlice({
       state.isPlusSubscribed = false; // Reset plus subscription state
     },
     // Action for logging out
-    setLoggedOut: (state) => {
+    setLoggedOut(state) {
       state.user = null;
       state.isLoggedIn = false;
       state.isSummaristLoggedIn = false;
@@ -74,15 +74,17 @@ const userSlice = createSlice({
       state.isPlusSubscribed = false; // Reset plus subscription state
     },
     // Action to set subscription status
-    setSubscribed: (state, action: PayloadAction<boolean>) => {
+    setSubscribed(state, action: PayloadAction<boolean>) {
       state.isSubscribed = action.payload;
     },
     // Action to set plus subscription status
-    setPlusSubscribed: (state, action: PayloadAction<boolean>) => {
+    setPlusSubscribed(state, action: PayloadAction<boolean>) {
       state.isPlusSubscribed = action.payload;
     },
+   
   },
   extraReducers: (builder) => {
+    // Handle the fetchSubscriptionState async action
     builder.addCase(fetchSubscriptionState.fulfilled, (state, action) => {
       state.isSubscribed = action.payload.isSubscribed;
       state.isPlusSubscribed = action.payload.isPlusSubscribed;
@@ -99,6 +101,7 @@ export const {
   setLoggedOut,
   setSubscribed,
   setPlusSubscribed,
+  
 } = userSlice.actions;
 
 export default userSlice.reducer;

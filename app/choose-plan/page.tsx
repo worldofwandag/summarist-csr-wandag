@@ -21,13 +21,15 @@ const Page = () => {
   );
   const dispatch = useDispatch();
 
-   // Fetch subscription state from Firestore and sync with Redux
-   useEffect(() => {
+  // Fetch subscription state from Firestore and sync with Redux
+  useEffect(() => {
     const fetchSubscriptionState = async () => {
       if (!user?.email) return; // Ensure the user is logged in
 
       try {
-        const response = await fetch(`/api/getSubscriptionState?email=${user.email}`);
+        const response = await fetch(
+          `/api/getSubscriptionState?email=${user.email}`
+        );
         if (response.ok) {
           const { isSubscribed, isPlusSubscribed } = await response.json();
           dispatch(setSubscribed(isSubscribed));
@@ -106,11 +108,8 @@ const Page = () => {
       );
       await stripe?.redirectToCheckout({ sessionId });
 
-
-
-
       // Temporary workaround: Update Redux state and persist it BEGINNING
-      
+
       if (activePlan === "premium plus annual") {
         console.log("Setting isPlusSubscribed to true in localStorage");
         dispatch(setPlusSubscribed(true));
@@ -128,10 +127,6 @@ const Page = () => {
     }
 
     // Temporary workaround: Update Redux state and persist it END
-
-
-
-
   };
 
   return (
