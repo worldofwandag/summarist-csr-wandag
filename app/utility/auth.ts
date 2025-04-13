@@ -46,6 +46,7 @@ export const googleLogin = async (dispatch: AppDispatch): Promise<{
   try {
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
+    console.log("Credential:", credential);
     if (credential) {
       const token = credential.accessToken ?? null; // Convert undefined to null
       const user = result.user;

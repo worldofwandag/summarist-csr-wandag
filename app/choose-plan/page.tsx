@@ -1,66 +1,139 @@
 "use client";
 import Image from "next/image";
 import pricing from "../assets/pricing-top.webp";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../redux/store"; // for TS
+import { setSubscribed, setPlusSubscribed } from "../redux/userSlice"; // Redux actions
 
 const Page = () => {
-// Set "Premium Plus Yearly" as the default active plan
-const [activePlan, setActivePlan] = useState<"premium plus annual" | "premium monthly">("premium plus annual");
-const user = useSelector((state: RootState) => state.user.user);
+  // Set "Premium Plus Yearly" as the default active plan
+  const [activePlan, setActivePlan] = useState<
+    "premium plus annual" | "premium monthly"
+  >("premium plus annual");
+  const user = useSelector((state: RootState) => state.user.user);
+  const isSubscribed = useSelector(
+    (state: RootState) => state.user.isSubscribed
+  );
+  const isPlusSubscribed = useSelector(
+    (state: RootState) => state.user.isPlusSubscribed
+  );
+  const dispatch = useDispatch();
 
-const handleCheckout = async () => {
-  if (!activePlan) {
-    alert("Please select a plan before proceeding.");
-    return;
-  }
+   // Fetch subscription state from Firestore and sync with Redux
+   useEffect(() => {
+    const fetchSubscriptionState = async () => {
+      if (!user?.email) return; // Ensure the user is logged in
 
-  try {
-    console.log("Starting checkout process for plan:", activePlan);
+      try {
+        const response = await fetch(`/api/getSubscriptionState?email=${user.email}`);
+        if (response.ok) {
+          const { isSubscribed, isPlusSubscribed } = await response.json();
+          dispatch(setSubscribed(isSubscribed));
+          dispatch(setPlusSubscribed(isPlusSubscribed));
+          localStorage.setItem("isSubscribed", String(isSubscribed));
+          localStorage.setItem("isPlusSubscribed", String(isPlusSubscribed));
+        } else {
+          console.error("Failed to fetch subscription state");
+        }
+      } catch (error) {
+        console.error("Error fetching subscription state:", error);
+      }
+    };
 
-    const lookupKey = activePlan;
-    const email = user?.email; // Retrieve the user's email from Redux or context
+    fetchSubscriptionState();
+  }, [user?.email, dispatch]);
 
-    if (!email) {
-      alert("User email is required to proceed with the checkout.");
+  const handleCheckout = async () => {
+    console.log("handleCheckout called");
+    console.log("Active Plan:", activePlan);
+    console.log("isSubscribed (Redux):", isSubscribed);
+    console.log("isPlusSubscribed (Redux):", isPlusSubscribed);
+    if (!activePlan) {
+      alert("Please select a plan before proceeding.");
       return;
     }
 
-    console.log("Sending request with:", { lookupKey, email });
-
-    const response = await fetch("/api/createCheckoutSessions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ lookupKey, email }),
-    });
-
-    console.log("API response status:", response.status);
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("API Error:", errorData); // Log the error response
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Prevent duplicate subscriptions
+    if (
+      (activePlan === "premium plus annual" && isPlusSubscribed) ||
+      (activePlan === "premium monthly" && isSubscribed)
+    ) {
+      alert("You are already subscribed to this plan.");
+      return;
     }
 
-    const { sessionId } = await response.json();
+    try {
+      console.log("Starting checkout process for plan:", activePlan);
 
-    if (!sessionId) {
-      throw new Error("Failed to create checkout session.");
+      const lookupKey = activePlan;
+      const email = user?.email; // Retrieve the user's email from Redux or context
+
+      if (!email) {
+        alert("User email is required to proceed with the checkout.");
+        return;
+      }
+
+      console.log("Sending request with:", { lookupKey, email });
+
+      const response = await fetch("/api/createCheckoutSessions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ lookupKey, email }),
+      });
+
+      console.log("API response status:", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API Error:", errorData); // Log the error response
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const { sessionId } = await response.json();
+
+      if (!sessionId) {
+        throw new Error("Failed to create checkout session.");
+      }
+
+      console.log("Redirecting to Stripe Checkout with sessionId:", sessionId);
+
+      const stripe = await loadStripe(
+        process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+      );
+      await stripe?.redirectToCheckout({ sessionId });
+
+
+
+
+      // Temporary workaround: Update Redux state and persist it BEGINNING
+      
+      if (activePlan === "premium plus annual") {
+        console.log("Setting isPlusSubscribed to true in localStorage");
+        dispatch(setPlusSubscribed(true));
+        localStorage.setItem("isPlusSubscribed", "true");
+        console.log("isPlusSubscribed set to true");
+      } else if (activePlan === "premium monthly") {
+        console.log("Setting isSubscribed to true in localStorage");
+        dispatch(setSubscribed(true));
+        localStorage.setItem("isSubscribed", "true");
+        console.log("isSubscribed set to true");
+      }
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      alert("Something went wrong. Please try again.");
     }
 
-    console.log("Redirecting to Stripe Checkout with sessionId:", sessionId);
+    // Temporary workaround: Update Redux state and persist it END
 
-    const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-    await stripe?.redirectToCheckout({ sessionId });
-  } catch (error) {
-    console.error("Error during checkout:", error);
-    alert("Something went wrong. Please try again.");
-  }
-};
+
+
+
+  };
+
   return (
     <div className="plan">
       <div className="plan__header--wrapper">
@@ -123,7 +196,9 @@ const handleCheckout = async () => {
 
           {/* PREMIUM PLUS YEARLY */}
           <div
-            className={`plan__card ${activePlan === "premium plus annual" ? "plan__card--active" : ""}`}
+            className={`plan__card ${
+              activePlan === "premium plus annual" ? "plan__card--active" : ""
+            }`}
             onClick={() => setActivePlan("premium plus annual")}
           >
             <div className="plan__card--circle">
@@ -142,7 +217,9 @@ const handleCheckout = async () => {
 
           {/* PREMIUM MONTHLY */}
           <div
-            className={`plan__card ${activePlan === "premium monthly" ? "plan__card--active" : ""}`}
+            className={`plan__card ${
+              activePlan === "premium monthly" ? "plan__card--active" : ""
+            }`}
             onClick={() => setActivePlan("premium monthly")}
           >
             <div className="plan__card--circle"></div>
@@ -170,14 +247,9 @@ const handleCheckout = async () => {
             <div className="plan__disclaimer">
               {activePlan === "premium monthly"
                 ? "30-day money back guarantee, no questions asked."
-                : "Cancel your trial at any time before it ends, and you won’t be charged."}
+                : "Cancel your trial at any time before it ends, and you won't be charged."}
             </div>
           </div>
-
-
-
-
-
 
           {/* FAQ WRAPPER */}
           <div className="faq__wrapper">

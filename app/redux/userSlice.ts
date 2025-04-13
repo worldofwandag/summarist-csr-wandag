@@ -30,6 +30,9 @@ const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
+    setUser(state, action) {
+      state.user = action.payload;
+    },
     // Action for summaristLogin
     setSummaristLogin: (state, action: PayloadAction<UserTypes>) => {
       state.user = action.payload;
@@ -89,6 +92,7 @@ const userSlice = createSlice({
 
 // Export actions
 export const {
+  setUser,
   setSummaristLogin,
   setGoogleLogin,
   setGuestLogin,

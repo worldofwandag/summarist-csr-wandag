@@ -38,6 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         // Fetch subscription details from Stripe
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        console.log("Retrieved subscription:", subscription);
 
         const priceId = subscription.items.data[0]?.price.id;
 
@@ -53,6 +54,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Create a new customer document if it doesn't exist
           customerRef = await db.collection("customers").add({
             email: email,
+            stripeCustomerId: session.customer,
+            stripeLink: `https://dashboard.stripe.com/customers/${session.customer}`,
           });
         } else {
           // Use the existing customer document
@@ -72,6 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log(`Customer ${email} updated in Firestore.`);
       } catch (error) {
         console.error("Error updating Firestore with subscription details:", error);
+        return res.status(500).json({ error: "Failed to retrieve subscription" });
       }
 
       break;
