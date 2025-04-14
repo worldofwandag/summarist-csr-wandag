@@ -57,20 +57,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             stripeCustomerId: session.customer,
             stripeLink: `https://dashboard.stripe.com/customers/${session.customer}`,
           });
+          console.log("New customer document created:", customerRef.id);
         } else {
           // Use the existing customer document
           customerRef = customersSnapshot.docs[0].ref;
+          console.log("Existing customer document found:", customerRef.id);
         }
 
         // Add or update the subscription in the customer's subcollection
-        await customerRef.collection("subscriptions").doc(subscriptionId).set({
-          status: subscription.status,
-          priceId: priceId,
-          items: subscription.items.data.map((item) => ({
-            price: item.price.id,
-            quantity: item.quantity,
-          })),
-        });
+        try {
+          await customerRef.collection("subscriptions").doc(subscriptionId).set({
+            status: subscription.status,
+            priceId: priceId,
+            items: subscription.items.data.map((item) => ({
+              price: item.price.id,
+              quantity: item.quantity,
+            })),
+          });
+          console.log("Subscription successfully written to Firestore.");
+        } catch (error) {
+          console.error("Error writing subscription to Firestore:", error);
+        }
 
         console.log(`Customer ${email} updated in Firestore.`);
       } catch (error) {

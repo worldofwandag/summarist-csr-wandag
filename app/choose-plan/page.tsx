@@ -1,13 +1,16 @@
 "use client";
 import Image from "next/image";
 import pricing from "../assets/pricing-top.webp";
+
 import React, { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../redux/store"; // for TS
-import { setSubscribed, setPlusSubscribed } from "../redux/userSlice"; // Redux actions
+import { RootState } from "../redux/store";
+import { setSubscribed, setPlusSubscribed } from "../redux/userSlice";
 
 const Page = () => {
+  // State to track the currently active accordion
+  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
   // Set "Premium Plus Yearly" as the default active plan
   const [activePlan, setActivePlan] = useState<
     "premium plus annual" | "premium monthly"
@@ -21,10 +24,14 @@ const Page = () => {
   );
   const dispatch = useDispatch();
 
+  // Prevent fetching subscription state if already updated
+  const [hasFetched, setHasFetched] = useState(false);
+
   // Fetch subscription state from Firestore and sync with Redux
   useEffect(() => {
+    console.log("Fetching subscription state...");
     const fetchSubscriptionState = async () => {
-      if (!user?.email) return; // Ensure the user is logged in
+      if (!user?.email || hasFetched) return;
 
       try {
         const response = await fetch(
@@ -32,12 +39,18 @@ const Page = () => {
         );
         if (response.ok) {
           const { isSubscribed, isPlusSubscribed } = await response.json();
+          console.log("Fetched subscription state:", {
+            isSubscribed,
+            isPlusSubscribed,
+          });
           dispatch(setSubscribed(isSubscribed));
           dispatch(setPlusSubscribed(isPlusSubscribed));
-          localStorage.setItem("isSubscribed", String(isSubscribed));
-          localStorage.setItem("isPlusSubscribed", String(isPlusSubscribed));
-        } else {
-          console.error("Failed to fetch subscription state");
+          localStorage.setItem("isSubscribed", JSON.stringify(isSubscribed));
+          localStorage.setItem(
+            "isPlusSubscribed",
+            JSON.stringify(isPlusSubscribed)
+          );
+          setHasFetched(true); // Mark as fetched
         }
       } catch (error) {
         console.error("Error fetching subscription state:", error);
@@ -45,13 +58,21 @@ const Page = () => {
     };
 
     fetchSubscriptionState();
-  }, [user?.email, dispatch]);
+  }, [user?.email, dispatch, hasFetched]);
+
+  // Function to toggle the accordion
+  const toggleAccordion = (index: number) => {
+    setActiveAccordion((prevIndex) => (prevIndex === index ? null : index));
+  };
+
+  // Handle checkout process for VISIBILITY IN CODE
 
   const handleCheckout = async () => {
     console.log("handleCheckout called");
     console.log("Active Plan:", activePlan);
     console.log("isSubscribed (Redux):", isSubscribed);
     console.log("isPlusSubscribed (Redux):", isPlusSubscribed);
+
     if (!activePlan) {
       alert("Please select a plan before proceeding.");
       return;
@@ -70,7 +91,7 @@ const Page = () => {
       console.log("Starting checkout process for plan:", activePlan);
 
       const lookupKey = activePlan;
-      const email = user?.email; // Retrieve the user's email from Redux or context
+      const email = user?.email;
 
       if (!email) {
         alert("User email is required to proceed with the checkout.");
@@ -87,11 +108,9 @@ const Page = () => {
         body: JSON.stringify({ lookupKey, email }),
       });
 
-      console.log("API response status:", response.status);
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("API Error:", errorData); // Log the error response
+        console.error("API Error:", errorData);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -103,30 +122,70 @@ const Page = () => {
 
       console.log("Redirecting to Stripe Checkout with sessionId:", sessionId);
 
+      // Update Redux state immediately
+      if (activePlan === "premium plus annual") {
+        dispatch(setPlusSubscribed(true));
+      } else if (activePlan === "premium monthly") {
+        dispatch(setSubscribed(true));
+      }
+
+      // Update Firestore directly
+      try {
+        await fetch("/api/updateSubscriptionState", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            isSubscribed: activePlan === "premium monthly",
+            isPlusSubscribed: activePlan === "premium plus annual",
+          }),
+        });
+        console.log("Firestore updated successfully.");
+      } catch (error) {
+        console.error("Error updating Firestore:", error);
+      }
+
       const stripe = await loadStripe(
         process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
       );
-      await stripe?.redirectToCheckout({ sessionId });
 
-      // Temporary workaround: Update Redux state and persist it BEGINNING
-
-      if (activePlan === "premium plus annual") {
-        console.log("Setting isPlusSubscribed to true in localStorage");
-        dispatch(setPlusSubscribed(true));
-        localStorage.setItem("isPlusSubscribed", "true");
-        console.log("isPlusSubscribed set to true");
-      } else if (activePlan === "premium monthly") {
-        console.log("Setting isSubscribed to true in localStorage");
-        dispatch(setSubscribed(true));
-        localStorage.setItem("isSubscribed", "true");
-        console.log("isSubscribed set to true");
+      if (!stripe) {
+        throw new Error("Stripe failed to load.");
       }
+
+      await stripe.redirectToCheckout({ sessionId });
     } catch (error) {
       console.error("Error during checkout:", error);
       alert("Something went wrong. Please try again.");
     }
 
+    //   setTimeout(async () => {
+    //     const stripe = await loadStripe(
+    //       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+    //     );
+
+    //     if (!stripe) {
+    //       throw new Error("Stripe failed to load.");
+    //     }
+
+    //     // Redirect to Stripe Checkout in the same window
+    //     await stripe.redirectToCheckout({ sessionId });
+    //   }, 500); // Small delay
+    // } catch (error) {
+    //   console.error("Error during checkout:", error);
+    //   alert("Something went wrong. Please try again.");
+    // }
+    // Temporary workaround: Update Redux state and persist it BEGINNING
+    // if (activePlan === "premium plus annual") {
+    //   dispatch(setPlusSubscribed(true));
+    // } else if (activePlan === "premium monthly") {
+    //   dispatch(setSubscribed(true));
+    // }
     // Temporary workaround: Update Redux state and persist it END
+
+    // Delay the Stripe Checkout redirection to ensure Redux state updates
   };
 
   return (
@@ -186,6 +245,25 @@ const Page = () => {
                 <b>3 million</b> people growing with Summarist everyday
               </div>
             </div>
+
+            <div className="plan__features">
+              <figure className="plan__features--icon">
+                <svg
+                  stroke="currentColor"
+                  fill="currentColor"
+                  strokeWidth="0"
+                  viewBox="0 0 640 512"
+                  height="1em"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M434.7 64h-85.9c-8 0-15.7 3-21.6 8.4l-98.3 90c-.1.1-.2.3-.3.4-16.6 15.6-16.3 40.5-2.1 56 12.7 13.9 39.4 17.6 56.1 2.7.1-.1.3-.1.4-.2l79.9-73.2c6.5-5.9 16.7-5.5 22.6 1 6 6.5 5.5 16.6-1 22.6l-26.1 23.9L504 313.8c2.9 2.4 5.5 5 7.9 7.7V128l-54.6-54.6c-5.9-6-14.1-9.4-22.6-9.4zM544 128.2v223.9c0 17.7 14.3 32 32 32h64V128.2h-96zm48 223.9c-8.8 0-16-7.2-16-16s7.2-16 16-16 16 7.2 16 16-7.2 16-16 16zM0 384h64c17.7 0 32-14.3 32-32V128.2H0V384zm48-63.9c8.8 0 16 7.2 16 16s-7.2 16-16 16-16-7.2-16-16c0-8.9 7.2-16 16-16zm435.9 18.6L334.6 217.5l-30 27.5c-29.7 27.1-75.2 24.5-101.7-4.4-26.9-29.4-24.8-74.9 4.4-101.7L289.1 64h-83.8c-8.5 0-16.6 3.4-22.6 9.4L128 128v223.9h18.3l90.5 81.9c27.4 22.3 67.7 18.1 90-9.3l.2-.2 17.9 15.5c15.9 13 39.4 10.5 52.3-5.4l31.4-38.6 5.4 4.4c13.7 11.1 33.9 9.1 45-4.7l9.5-11.7c11.2-13.8 9.1-33.9-4.6-45.1z"></path>
+                </svg>
+              </figure>
+              <div className="plan__features--text">
+                <b>Precise recommendations</b> collections curated by experts
+              </div>
+            </div>
           </div>
           <div className="section__title">Choose the plan that fits you</div>
 
@@ -197,7 +275,9 @@ const Page = () => {
             onClick={() => setActivePlan("premium plus annual")}
           >
             <div className="plan__card--circle">
-              <div className="plan__card--dot"></div>
+              {activePlan === "premium plus annual" && (
+                <div className="plan__card--dot"></div>
+              )}
             </div>
             <div className="plan__card--content">
               <div className="plan__card--title">Premium Plus Yearly</div>
@@ -217,7 +297,11 @@ const Page = () => {
             }`}
             onClick={() => setActivePlan("premium monthly")}
           >
-            <div className="plan__card--circle"></div>
+            <div className="plan__card--circle">
+              {activePlan === "premium monthly" && (
+                <div className="plan__card--dot"></div>
+              )}
+            </div>
             <div className="plan__card--content">
               <div className="plan__card--title">Premium Monthly</div>
               <div className="plan__card--price">$9.99/month</div>
@@ -248,8 +332,12 @@ const Page = () => {
 
           {/* FAQ WRAPPER */}
           <div className="faq__wrapper">
+            {/* Accordion Card 1 */}
             <div className="accordion__card">
-              <div className="accordion__header">
+              <div
+                className="accordion__header"
+                onClick={() => toggleAccordion(1)} // Toggle accordion 1
+              >
                 <div className="accordion__title">
                   How does the free 7-day trial work?
                 </div>
@@ -258,7 +346,9 @@ const Page = () => {
                   fill="currentColor"
                   strokeWidth="0"
                   viewBox="0 0 16 16"
-                  className="accordion__icon accordion__icon--rotate"
+                  className={`accordion__icon ${
+                    activeAccordion === 1 ? "accordion__icon--rotate" : ""
+                  }`}
                   height="1em"
                   width="1em"
                   xmlns="http://www.w3.org/2000/svg"
@@ -269,7 +359,9 @@ const Page = () => {
                   ></path>
                 </svg>
               </div>
-              <div className="collapse show" style={{ height: "96px" }}>
+              <div
+                className={`${activeAccordion === 1 ? "show" : "collapse"}`} // Add "show" class if active
+              >
                 <div className="accordion__body">
                   Begin your complimentary 7-day trial with a Summarist annual
                   membership. You are under no obligation to continue your
@@ -281,8 +373,13 @@ const Page = () => {
                 </div>
               </div>
             </div>
+
+            {/* Accordion Card 2 */}
             <div className="accordion__card">
-              <div className="accordion__header">
+              <div
+                className="accordion__header"
+                onClick={() => toggleAccordion(2)} // Toggle accordion 2
+              >
                 <div className="accordion__title">
                   Can I switch subscriptions from monthly to yearly, or yearly
                   to monthly?
@@ -292,7 +389,9 @@ const Page = () => {
                   fill="currentColor"
                   strokeWidth="0"
                   viewBox="0 0 16 16"
-                  className="accordion__icon "
+                  className={`accordion__icon ${
+                    activeAccordion === 2 ? "accordion__icon--rotate" : ""
+                  }`}
                   height="1em"
                   width="1em"
                   xmlns="http://www.w3.org/2000/svg"
@@ -303,7 +402,9 @@ const Page = () => {
                   ></path>
                 </svg>
               </div>
-              <div className="collapse " style={{ height: "0px" }}>
+              <div
+                className={`${activeAccordion === 2 ? "show" : "collapse"}`} // Add "show" class if active
+              >
                 <div className="accordion__body">
                   While an annual plan is active, it is not feasible to switch
                   to a monthly plan. However, once the current month ends,
@@ -312,8 +413,13 @@ const Page = () => {
                 </div>
               </div>
             </div>
+
+            {/* Accordion Card 3 */}
             <div className="accordion__card">
-              <div className="accordion__header">
+              <div
+                className="accordion__header"
+                onClick={() => toggleAccordion(3)} // Toggle accordion 3
+              >
                 <div className="accordion__title">
                   What's included in the Premium plan?
                 </div>
@@ -322,7 +428,9 @@ const Page = () => {
                   fill="currentColor"
                   strokeWidth="0"
                   viewBox="0 0 16 16"
-                  className="accordion__icon "
+                  className={`accordion__icon ${
+                    activeAccordion === 3 ? "accordion__icon--rotate" : ""
+                  }`}
                   height="1em"
                   width="1em"
                   xmlns="http://www.w3.org/2000/svg"
@@ -333,7 +441,9 @@ const Page = () => {
                   ></path>
                 </svg>
               </div>
-              <div className="collapse " style={{ height: "0px" }}>
+              <div
+                className={`${activeAccordion === 3 ? "show" : "collapse"}`} // Add "show" class if active
+              >
                 <div className="accordion__body">
                   Premium membership provides you with the ultimate Summarist
                   experience, including unrestricted entry to many best-selling
@@ -343,8 +453,12 @@ const Page = () => {
                 </div>
               </div>
             </div>
+
             <div className="accordion__card">
-              <div className="accordion__header">
+              <div
+                className="accordion__header"
+                onClick={() => toggleAccordion(4)} // Toggle accordion 4
+              >
                 <div className="accordion__title">
                   Can I cancel during my trial or subscription?
                 </div>
@@ -353,7 +467,9 @@ const Page = () => {
                   fill="currentColor"
                   strokeWidth="0"
                   viewBox="0 0 16 16"
-                  className="accordion__icon "
+                  className={`accordion__icon ${
+                    activeAccordion === 4 ? "accordion__icon--rotate" : ""
+                  }`}
                   height="1em"
                   width="1em"
                   xmlns="http://www.w3.org/2000/svg"
@@ -364,7 +480,9 @@ const Page = () => {
                   ></path>
                 </svg>
               </div>
-              <div className="collapse " style={{ height: "0px" }}>
+              <div
+                className={`${activeAccordion === 4 ? "show" : "collapse"}`} // Add "show" class if active
+              >
                 <div className="accordion__body">
                   You will not be charged if you cancel your trial before its
                   conclusion. While you will not have complete access to the

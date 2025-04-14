@@ -1893,13 +1893,19 @@ CHOOSE PLAN
   line-height: 1.5;
 }
 .collapse {
-  position: relative;
-  height: 0;
-  overflow: hidden;
-  transition: height 0.35s ease;
+  /* overflow: hidden; */
+  max-height: 0; /* Collapse the content */
+  
+  transition: max-height 0.35s ease, padding 0.35s ease; /* Smooth transition */
+  will-change: max-height, padding; /* Optimize rendering */
 }
-.collapse.show {
-  height: auto;
+
+.show {
+  /* overflow: hidden; */
+  max-height: 500px; /* Set a large enough max-height to accommodate the content */
+  
+  transition: max-height 1.2s ease, padding 0.35s ease; /* Smooth transition */
+  will-change: max-height, padding; /* Optimize rendering */
 }
 @media (max-width: 768px) {
   .accordion__title {
@@ -2033,6 +2039,37 @@ SEARCH BAR RESULTS
     max-width: unset;
     right: 0;
   }
+}
+
+/* 
+
+LIBRARY
+
+*/
+
+.finished__books--block-wrapper {
+  background-color: #f1f6f4;
+  max-width: -moz-fit-content;
+  max-width: fit-content;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px;
+  border-radius: 12px;
+  margin: 0 auto 56px;
+  text-align: center;
+}
+.finished__books--block-wrapper:last-childs {
+  margin-bottom: 0;
+}
+.finished__books--title {
+  color: #042330;
+  font-weight: 600;
+  font-size: 18px;
+}
+.finished__books--sub-title {
+  color: #394547;
 }
 
 /* 

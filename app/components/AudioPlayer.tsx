@@ -1,15 +1,19 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "@/app/redux/store"; // For TypeScript
+import { AppDispatch, RootState } from "@/app/redux/store";
 import { openLoginModal } from "@/app/redux/modalSlice";
+import { markAsFinished } from "@/app/redux/finishedSlice";
 
 interface AudioPlayerProps {
   audioLink: string;
   imageLink: string;
   title: string;
   author: string;
+  bookId: string; // Add book ID for marking as finished
+  subTitle: string; // Add subtitle if available
+  averageRating: number; // Add average rating
   isLoading: boolean;
 }
 
@@ -18,6 +22,9 @@ export default function AudioPlayer({
   imageLink,
   title,
   author,
+  bookId,
+  subTitle,
+  averageRating, 
   isLoading,
 }: AudioPlayerProps) {
   const dispatch = useDispatch<AppDispatch>();
@@ -85,11 +92,35 @@ export default function AudioPlayer({
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-  // if (isLoading) {
+  const handleAudioEnd = () => {
+    dispatch(
+      markAsFinished({
+        id: bookId,
+        audioLink,
+        imageLink,
+        title,
+        author,
+        subTitle,
+        averageRating,
+      })
+    );
+  };
+
+  useEffect(() => {
+    const audioElement = audioRef.current;
+    if (audioElement) {
+      audioElement.addEventListener("ended", handleAudioEnd);
+    }
+
+    return () => {
+      if (audioElement) {
+        audioElement.removeEventListener("ended", handleAudioEnd);
+      }
+    };
+  }, [audioRef]);
 
   return (
     <div className="audio__wrapper">
-      
       <audio
         ref={audioRef}
         src={audioLink}

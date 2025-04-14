@@ -7,8 +7,13 @@ import { Provider } from "react-redux";
 import store from "./redux/store";
 import BarComponents from "./components/BarComponents";
 import { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { setGoogleLogin, setSummaristLogin, setGuestLogin } from "./redux/userSlice"; // Import all login actions
+import {
+  setGoogleLogin,
+  setSummaristLogin,
+  setGuestLogin,
+  setSubscribed,
+  setPlusSubscribed,
+} from "./redux/userSlice"; // Import subscription actions
 
 const roboto = Roboto({
   weight: ["100", "300", "400", "500", "700", "900"],
@@ -27,20 +32,35 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   // Rehydration logic
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const loginType = localStorage.getItem("loginType"); // Store login type (e.g., "google", "summarist", "guest")
+    // Ensure this logic only runs on the client side
+    if (typeof window === "undefined") return;
 
-    if (storedUser && loginType) {
-      const user = JSON.parse(storedUser);
+    try {
+      const storedUser = localStorage.getItem("user");
+      const loginType = localStorage.getItem("loginType"); // Store login type (e.g., "google", "summarist", "guest")
+      const isSubscribed = JSON.parse(
+        localStorage.getItem("isSubscribed") || "false"
+      );
+      const isPlusSubscribed = JSON.parse(
+        localStorage.getItem("isPlusSubscribed") || "false"
+      );
 
-      // Rehydrate Redux state based on login type
-      if (loginType === "google") {
-        store.dispatch(setGoogleLogin(user));
-      } else if (loginType === "summarist") {
-        store.dispatch(setSummaristLogin(user));
-      } else if (loginType === "guest") {
-        store.dispatch(setGuestLogin(user));
+      if (storedUser && loginType) {
+        const user = JSON.parse(storedUser);
+
+        if (loginType === "google") {
+          store.dispatch(setGoogleLogin(user));
+        } else if (loginType === "summarist") {
+          store.dispatch(setSummaristLogin(user));
+        } else if (loginType === "guest") {
+          store.dispatch(setGuestLogin(user));
+        }
+
+        store.dispatch(setSubscribed(isSubscribed));
+        store.dispatch(setPlusSubscribed(isPlusSubscribed));
       }
+    } catch (error) {
+      console.error("Error during rehydration:", error);
     }
   }, []);
 

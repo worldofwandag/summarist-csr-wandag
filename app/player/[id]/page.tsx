@@ -2,28 +2,31 @@
 
 import React, { useEffect, useState } from "react";
 import { BookTypes } from "@/app/utility/bookTypes"; // For TypeScript
-import { use } from "react"; // For params because params is a promise in Next.js now
 import AudioPlayer from "@/app/components/AudioPlayer";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/redux/store";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params); // Unwrap `params` using `use()`
+  const [id, setId] = useState<string | null>(null); // State to store the book ID
   const [book, setBook] = useState<BookTypes | null>(null); // State to store book data
   const [isLoading, setIsLoading] = useState(true); // State to track loading state
   const fontSize = useSelector((state: RootState) => state.fontSize);
 
+  // Resolve the `params` promise and fetch the book data
   useEffect(() => {
-    const fetchBook = async () => {
+    const resolveParamsAndFetchBook = async () => {
       try {
-        const data = await fetch(
-          `https://us-central1-summaristt.cloudfunctions.net/getBook?id=${id}`
+        const resolvedParams = await params; // Resolve the `params` promise
+        setId(resolvedParams.id); // Set the book ID
+
+        const response = await fetch(
+          `https://us-central1-summaristt.cloudfunctions.net/getBook?id=${resolvedParams.id}`
         );
-        if (!data.ok) {
+        if (!response.ok) {
           throw new Error("Failed to fetch data");
         }
-        const book = await data.json();
-        setBook(book); // Update state with fetched book data
+        const bookData = await response.json();
+        setBook(bookData); // Update state with fetched book data
       } catch (error) {
         console.error("Failed to fetch book:", error);
       } finally {
@@ -34,8 +37,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       }
     };
 
-    fetchBook();
-  }, [id]); // Dependency array ensures this runs when `id` changes
+    resolveParamsAndFetchBook();
+  }, [params]); // Dependency array ensures this runs when `params` changes
 
   if (isLoading) {
     // Show the loading spinner while loading
@@ -91,6 +94,9 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           imageLink={book?.imageLink || ""}
           title={book?.title || ""}
           author={book?.author || ""}
+          bookId={id || ""} // Pass the book ID to the AudioPlayer
+          subTitle={book?.subTitle || ""}
+          averageRating={book?.averageRating || 0} // Pass averageRating with a default value of 0
           isLoading={isLoading}
         />
       </div>

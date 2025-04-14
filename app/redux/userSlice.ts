@@ -4,14 +4,22 @@ import { fetchSubscriptionState } from "../utility/auth";
 
 // Define the UserState interface
 interface UserState {
-  user: UserTypes | null; // The current user object or null if not logged in
-  isLoggedIn: boolean; // General logged-in state
-  isSummaristLoggedIn: boolean; // State for summaristLogin
-  isGoogleLoggedIn: boolean; // State for googleLogin
-  isGuestLoggedIn: boolean; // State for guestLogin
-  isSubscribed: boolean; // State for premium subscription
-  isPlusSubscribed: boolean; // State for premium plus subscription
+  user: UserTypes | null;
+  isLoggedIn: boolean;
+  isSummaristLoggedIn: boolean;
+  isGoogleLoggedIn: boolean;
+  isGuestLoggedIn: boolean;
+  isSubscribed: boolean;
+  isPlusSubscribed: boolean;
 }
+
+// Helper function to safely access localStorage
+const getLocalStorageItem = (key: string, defaultValue: string) => {
+  if (typeof window !== "undefined") {
+    return JSON.parse(localStorage.getItem(key) || defaultValue);
+  }
+  return JSON.parse(defaultValue);
+};
 
 // Initial state
 const initialState: UserState = {
@@ -20,8 +28,8 @@ const initialState: UserState = {
   isSummaristLoggedIn: false,
   isGoogleLoggedIn: false,
   isGuestLoggedIn: false,
-  isSubscribed: false, // Default value for subscription
-  isPlusSubscribed: false, // Default value for plus subscription
+  isSubscribed: getLocalStorageItem("isSubscribed", "false"), // Safely access localStorage
+  isPlusSubscribed: getLocalStorageItem("isPlusSubscribed", "false"), // Safely access localStorage
 };
 
 // Create the userSlice
@@ -29,65 +37,82 @@ const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    // Action to set the user object
     setUser(state, action: PayloadAction<UserTypes | null>) {
       state.user = action.payload;
     },
-    // Action for summaristLogin
     setSummaristLogin(state, action: PayloadAction<UserTypes>) {
       state.user = action.payload;
       state.isLoggedIn = true;
       state.isSummaristLoggedIn = true;
       state.isGoogleLoggedIn = false;
       state.isGuestLoggedIn = false;
-      state.isSubscribed = false; // Reset subscription state
-      state.isPlusSubscribed = false; // Reset plus subscription state
+      state.isSubscribed = false;
+      state.isPlusSubscribed = false;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("isSubscribed", "false");
+        localStorage.setItem("isPlusSubscribed", "false");
+      }
     },
-    // Action for googleLogin
     setGoogleLogin(state, action: PayloadAction<UserTypes>) {
       state.user = action.payload;
       state.isLoggedIn = true;
       state.isSummaristLoggedIn = false;
       state.isGoogleLoggedIn = true;
       state.isGuestLoggedIn = false;
-      state.isSubscribed = false; // Reset subscription state
-      state.isPlusSubscribed = false; // Reset plus subscription state
+      state.isSubscribed = false;
+      state.isPlusSubscribed = false;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("isSubscribed", "false");
+        localStorage.setItem("isPlusSubscribed", "false");
+      }
     },
-    // Action for guestLogin
     setGuestLogin(state, action: PayloadAction<UserTypes>) {
       state.user = action.payload;
       state.isLoggedIn = true;
       state.isSummaristLoggedIn = false;
       state.isGoogleLoggedIn = false;
       state.isGuestLoggedIn = true;
-      state.isSubscribed = false; // Reset subscription state
-      state.isPlusSubscribed = false; // Reset plus subscription state
+      state.isSubscribed = false;
+      state.isPlusSubscribed = false;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("isSubscribed", "false");
+        localStorage.setItem("isPlusSubscribed", "false");
+      }
     },
-    // Action for logging out
     setLoggedOut(state) {
       state.user = null;
       state.isLoggedIn = false;
       state.isSummaristLoggedIn = false;
       state.isGoogleLoggedIn = false;
       state.isGuestLoggedIn = false;
-      state.isSubscribed = false; // Reset subscription state
-      state.isPlusSubscribed = false; // Reset plus subscription state
+      state.isSubscribed = false;
+      state.isPlusSubscribed = false;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("isSubscribed", "false");
+        localStorage.setItem("isPlusSubscribed", "false");
+      }
     },
-    // Action to set subscription status
     setSubscribed(state, action: PayloadAction<boolean>) {
       state.isSubscribed = action.payload;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("isSubscribed", JSON.stringify(action.payload));
+      }
     },
-    // Action to set plus subscription status
     setPlusSubscribed(state, action: PayloadAction<boolean>) {
       state.isPlusSubscribed = action.payload;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("isPlusSubscribed", JSON.stringify(action.payload));
+      }
     },
-   
   },
   extraReducers: (builder) => {
-    // Handle the fetchSubscriptionState async action
     builder.addCase(fetchSubscriptionState.fulfilled, (state, action) => {
       state.isSubscribed = action.payload.isSubscribed;
       state.isPlusSubscribed = action.payload.isPlusSubscribed;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("isSubscribed", JSON.stringify(action.payload.isSubscribed));
+        localStorage.setItem("isPlusSubscribed", JSON.stringify(action.payload.isPlusSubscribed));
+      }
     });
   },
 });
@@ -101,7 +126,6 @@ export const {
   setLoggedOut,
   setSubscribed,
   setPlusSubscribed,
-  
 } = userSlice.actions;
 
 export default userSlice.reducer;
