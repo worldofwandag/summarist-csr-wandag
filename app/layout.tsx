@@ -14,6 +14,8 @@ import {
   setSubscribed,
   setPlusSubscribed,
 } from "./redux/userSlice"; // Import subscription actions
+import { loadSavedBooks } from "./redux/librarySlice"; // Import action to load saved books
+import { loadFinishedBooks } from "./redux/finishedSlice"; // Import action to load finished books
 
 const roboto = Roboto({
   weight: ["100", "300", "400", "500", "700", "900"],
@@ -58,6 +60,18 @@ export default function RootLayout({
 
         store.dispatch(setSubscribed(isSubscribed));
         store.dispatch(setPlusSubscribed(isPlusSubscribed));
+      }
+
+      // Rehydrate savedBooks
+      const savedBooks = localStorage.getItem("savedBooks");
+      if (savedBooks) {
+        store.dispatch(loadSavedBooks(JSON.parse(savedBooks)));
+      }
+
+      // Rehydrate finishedBooks
+      const finishedBooks = localStorage.getItem("finishedBooks");
+      if (finishedBooks) {
+        store.dispatch(loadFinishedBooks(JSON.parse(finishedBooks)));
       }
     } catch (error) {
       console.error("Error during rehydration:", error);

@@ -233,7 +233,8 @@ function Sidebar(): React.JSX.Element {
             marginBottom: pathname.startsWith("/player/") ? "80px" : "0", // Shift up by 64px on /player/[id]
           }}
           >
-            <a className="sidebar__link--wrapper" href="/settings">
+            
+            <Link href={`/settings`} className="sidebar__link--wrapper">
               <div className="sidebar__link--line "></div>
               <div className="sidebar__icon--wrapper">
                 <svg
@@ -254,7 +255,10 @@ function Sidebar(): React.JSX.Element {
                 </svg>
               </div>
               <div className="sidebar__link--text">Settings</div>
-            </a>
+              </Link>
+            
+
+
             <div className="sidebar__link--wrapper sidebar__link--not-allowed">
               <div className="sidebar__link--line "></div>
               <div className="sidebar__icon--wrapper">

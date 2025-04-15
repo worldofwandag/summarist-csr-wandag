@@ -3,10 +3,12 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/redux/store";
+import Link from "next/link"; // Import Link for client-side navigation
+import { BookTypes } from "@/app/utility/bookTypes"; // Import BookTypes for TypeScript
 
 const Page = () => {
   const savedBooks = useSelector((state: RootState) => state.library.savedBooks); // Get saved books from Redux
-  const finishedBooks = useSelector((state: RootState) => state.finished.finishedBooks);// Get finished books from Redux
+  const finishedBooks = useSelector((state: RootState) => state.finished.finishedBooks); // Get finished books from Redux
   const savedBookList = Object.values(savedBooks); // Convert savedBooks object to an array
   const finishedBookList = Object.values(finishedBooks); // Convert finishedBooks object to an array
 
@@ -20,9 +22,7 @@ const Page = () => {
           {/* DEFAULT STATE WITHOUT SAVED BOOKS */}
           {savedBookList.length === 0 && (
             <div className="finished__books--block-wrapper">
-              <div className="finished__books--title">
-                Save your favorite books!
-              </div>
+              <div className="finished__books--title">Save your favorite books!</div>
               <div className="finished__books--sub-title">
                 When you save a book, it will appear here.
               </div>
@@ -33,14 +33,12 @@ const Page = () => {
           {savedBookList.length > 0 && (
             <div className="for-you__recommended--books">
               {savedBookList.map((book) => (
-                <a
+                <Link
                   key={book.id}
-                  className="for-you__recommended--books-link"
                   href={`/book/${book.id}`}
+                  className="for-you__recommended--books-link"
                 >
-                  <audio
-                    src={`https://firebasestorage.googleapis.com/v0/b/summaristt.appspot.com/o/books%2Faudios%2F${book.id}.mp3?alt=media`}
-                  ></audio>
+                  <audio src={book.audioLink}></audio> {/* Use book.audioLink */}
                   <figure
                     className="book__image--wrapper"
                     style={{ marginBottom: "8px" }}
@@ -54,9 +52,7 @@ const Page = () => {
                   </figure>
                   <div className="recommended__book--title">{book.title}</div>
                   <div className="recommended__book--author">{book.author}</div>
-                  <div className="recommended__book--sub-title">
-                    {book.subTitle}
-                  </div>
+                  <div className="recommended__book--sub-title">{book.subTitle}</div>
                   <div className="recommended__book--details-wrapper">
                     <div className="recommended__book--details">
                       <div className="recommended__book--details-icon">
@@ -73,9 +69,7 @@ const Page = () => {
                           <path d="M13 7h-2v6h6v-2h-4z"></path>
                         </svg>
                       </div>
-                      <div className="recommended__book--details-text">
-                        04:52
-                      </div>
+                      <div className="recommended__book--details-text">04:52</div>
                     </div>
                     <div className="recommended__book--details">
                       <div className="recommended__book--details-icon">
@@ -96,23 +90,18 @@ const Page = () => {
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
           )}
 
-
-      
-       <div className="for-you__title">Finished</div>
+          <div className="for-you__title">Finished</div>
           <div className="for-you__sub--title">{finishedBookList.length} items</div>
 
-           {/* FINISHED BOOKS initial state */}
-
+          {/* FINISHED BOOKS initial state */}
           {finishedBookList.length === 0 && (
             <div className="finished__books--block-wrapper">
-              <div className="finished__books--title">
-                Done and Dusted!
-              </div>
+              <div className="finished__books--title">Done and Dusted!</div>
               <div className="finished__books--sub-title">
                 When you finish a book, you can find it here later.
               </div>
@@ -120,20 +109,15 @@ const Page = () => {
           )}
 
           {/* FINISHED BOOKS if any exist */}
-
           {finishedBookList.length > 0 && (
             <div className="for-you__recommended--books">
-
-              
               {finishedBookList.map((book, index) => (
-                <a
-                key={`${book.id}-${index}`} 
-                  className="for-you__recommended--books-link"
+                <Link
+                  key={`${book.id}-${index}`}
                   href={`/book/${book.id}`}
+                  className="for-you__recommended--books-link"
                 >
-                  <audio
-                    src={`https://firebasestorage.googleapis.com/v0/b/summaristt.appspot.com/o/books%2Faudios%2F${book.id}.mp3?alt=media`}
-                  ></audio>
+                  <audio src={book.audioLink}></audio> {/* Use book.audioLink */}
                   <figure
                     className="book__image--wrapper"
                     style={{ marginBottom: "8px" }}
@@ -147,9 +131,7 @@ const Page = () => {
                   </figure>
                   <div className="recommended__book--title">{book.title}</div>
                   <div className="recommended__book--author">{book.author}</div>
-                  <div className="recommended__book--sub-title">
-                    {book.subTitle}
-                  </div>
+                  <div className="recommended__book--sub-title">{book.subTitle}</div>
                   <div className="recommended__book--details-wrapper">
                     <div className="recommended__book--details">
                       <div className="recommended__book--details-icon">
@@ -166,9 +148,7 @@ const Page = () => {
                           <path d="M13 7h-2v6h6v-2h-4z"></path>
                         </svg>
                       </div>
-                      <div className="recommended__book--details-text">
-                        04:52
-                      </div>
+                      <div className="recommended__book--details-text">04:52</div>
                     </div>
                     <div className="recommended__book--details">
                       <div className="recommended__book--details-icon">
@@ -189,14 +169,10 @@ const Page = () => {
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
           )}
-
-
-
-
         </div>
       </div>
     </div>

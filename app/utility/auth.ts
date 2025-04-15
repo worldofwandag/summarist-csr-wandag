@@ -11,12 +11,20 @@ import {
   signInAnonymously,
   signOut,
 } from "firebase/auth";
-import { AppDispatch } from "../redux/store"; //   for typescript
-import { setSummaristLogin, setGoogleLogin, setGuestLogin, setLoggedOut } from "../redux/userSlice";
+import { AppDispatch } from "../redux/store"; // For TypeScript
+import {
+  setSummaristLogin,
+  setGoogleLogin,
+  setGuestLogin,
+  setLoggedOut,
+} from "../redux/userSlice";
+import { loadSavedBooks, clearSavedBooks } from "../redux/librarySlice";
+import { clearFinishedBooks } from "../redux/finishedSlice";
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import  store  from "../redux/store"; // Import the Redux store
+import { saveStateToLocalStorage } from "../redux/store";
 
 const provider = new GoogleAuthProvider();
-// auth.languageCode = "en";
 
 // Utility function to serialize the Firebase User object because Redux Toolkit does not support serializing Firebase User objects directly
 const serializeUser = (user: User) => ({
@@ -28,17 +36,23 @@ const serializeUser = (user: User) => ({
 
 // Save user and login type to localStorage
 const saveUserToLocalStorage = (user: any, loginType: string) => {
-  localStorage.setItem("user", JSON.stringify(user));
-  localStorage.setItem("loginType", loginType);
+  localStorage.setItem("user", JSON.stringify(user)); // Save the full user object
+  localStorage.setItem("loginType", loginType); // Save the login type
 };
 
 // Remove user and login type from localStorage
 const removeUserFromLocalStorage = () => {
-  localStorage.removeItem("user");
-  localStorage.removeItem("loginType");
+  localStorage.removeItem("user"); // Remove the user object
+  localStorage.removeItem("loginType"); // Remove the login type
 };
 
-// googleLogin
+// Load user from localStorage
+const loadUserFromLocalStorage = (): any | null => {
+  const user = localStorage.getItem("user");
+  return user ? JSON.parse(user) : null; // Parse and return the user object, or null if not found
+};
+
+// Google Login
 export const googleLogin = async (dispatch: AppDispatch): Promise<{
   token: string | null;
   user: User;
@@ -46,36 +60,25 @@ export const googleLogin = async (dispatch: AppDispatch): Promise<{
   try {
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
-    console.log("Credential:", credential);
     if (credential) {
-      const token = credential.accessToken ?? null; // Convert undefined to null
+      const token = credential.accessToken ?? null;
       const user = result.user;
-      const serializedUser = serializeUser(user); // Serialize the user object
-      // Save user to localStorage
-      saveUserToLocalStorage(serializedUser, "google");
-      console.log("Token:", token);
-      console.log("User:", serializedUser);
-      dispatch(setGoogleLogin(serializedUser)); // Dispatch the user to the Redux store
-      return { token, user }; // Return token and user for further use
+      const serializedUser = serializeUser(user);
+      saveUserToLocalStorage(serializedUser, "google"); // Save user to localStorage
+      dispatch(setGoogleLogin(serializedUser)); // Dispatch user to Redux
+      dispatch(loadSavedBooks({ userId: serializedUser.uid })); // Load saved books for the user
+      return { token, user };
     } else {
       console.error("No credential found in the result.");
       return null;
     }
   } catch (error: any) {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    const email = error.customData?.email;
-    const credential = GoogleAuthProvider.credentialFromError(error);
-    console.error("Error Code:", errorCode);
-    console.error("Error Message:", errorMessage);
-    console.error("Email:", email);
-    console.error("Credential Error:", credential);
-    throw error; // Re-throw the error for handling in the calling function
+    console.error("Error during Google login:", error);
+    throw error;
   }
 };
 
-// creating a Summarist Account
-
+// Summarist Account Registration
 export const summaristRegister = async (
   email: string,
   password: string,
@@ -88,23 +91,18 @@ export const summaristRegister = async (
       password
     );
     const user = userCredential.user;
-    const serializedUser = serializeUser(user); // Serialize the user object
-    // Save user to localStorage
-    saveUserToLocalStorage(serializedUser, "summarist");
-    console.log("User registered successfully:", serializedUser);
-    dispatch(setSummaristLogin(serializedUser)); // Dispatch the user to the Redux store
-    return user; // Return the registered user
+    const serializedUser = serializeUser(user);
+    saveUserToLocalStorage(serializedUser, "summarist"); // Save user to localStorage
+    dispatch(setSummaristLogin(serializedUser)); // Dispatch user to Redux
+    dispatch(loadSavedBooks({ userId: serializedUser.uid })); // Load saved books for the user
+    return user;
   } catch (error: any) {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    console.error("Error Code:", errorCode);
-    console.error("Error Message:", errorMessage);
-    throw error; // Re-throw the error for handling in the calling function
+    console.error("Error during registration:", error);
+    throw error;
   }
 };
 
-// login to Summarist Account
-
+// Summarist Login
 export const summaristLogin = async (
   email: string,
   password: string,
@@ -117,72 +115,66 @@ export const summaristLogin = async (
       password
     );
     const user = userCredential.user;
-    const serializedUser = serializeUser(user); // Serialize the user object
-    console.log("User logged in successfully:", serializedUser);
-    dispatch(setSummaristLogin(serializedUser)); // Dispatch the user to the Redux store
-    // Save user to localStorage
-    saveUserToLocalStorage(serializedUser, "summarist");
-    return user; // Return the logged-in user
+    const serializedUser = serializeUser(user);
+    saveUserToLocalStorage(serializedUser, "summarist"); // Save user to localStorage
+    dispatch(setSummaristLogin(serializedUser)); // Dispatch user to Redux
+    dispatch(loadSavedBooks({ userId: serializedUser.uid })); // Load saved books for the user
+    return user;
   } catch (error: any) {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    console.error("Error Code:", errorCode);
-    console.error("Error Message:", errorMessage);
-    throw error; // Re-throw the error for handling in the calling function
+    console.error("Error during login:", error);
+    throw error;
   }
 };
 
-// Guest Log In
+// Guest Login
 export const guestLogin = async (dispatch: AppDispatch): Promise<User | null> => {
   try {
     const userCredential = await signInAnonymously(auth);
     const user = userCredential.user;
-    const serializedUser = serializeUser(user); // Serialize the user object
-    console.log("Guest signed in successfully:", serializedUser);
-    // Save user to localStorage
-    saveUserToLocalStorage(serializedUser, "guest");
-    dispatch(setGuestLogin(serializedUser)); // Dispatch the user to the Redux store
-    return user; // Return the guest user
+    const serializedUser = serializeUser(user);
+    saveUserToLocalStorage(serializedUser, "guest"); // Save user to localStorage
+    dispatch(setGuestLogin(serializedUser)); // Dispatch user to Redux
+    return user;
   } catch (error: any) {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    console.error("Error Code:", errorCode);
-    console.error("Error Message:", errorMessage);
-    throw error; // Re-throw the error for handling in the calling function
+    console.error("Error during guest login:", error);
+    throw error;
   }
 };
 
-// Sign out
+// Logout User
 export const logoutUser = async (dispatch: AppDispatch): Promise<void> => {
   try {
+    // Save the current state to localStorage before clearing it
+    saveStateToLocalStorage(store.getState());
+
+    // Sign out the user from Firebase
     await signOut(auth);
-    // Remove user from localStorage
+
+    // Remove user-related data from localStorage
     removeUserFromLocalStorage();
+
+    // Clear Redux state
+    dispatch(clearSavedBooks()); // Clear saved books from Redux
+    dispatch(clearFinishedBooks()); // Clear finished books from Redux
+    dispatch(setLoggedOut()); // Clear user data from Redux
+
     console.log("User signed out successfully.");
-    dispatch(setLoggedOut());
   } catch (error: any) {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    console.error("Error Code:", errorCode);
-    console.error("Error Message:", errorMessage);
-    throw error; // Re-throw the error for handling in the calling function
+    console.error("Error during logout:", error);
+    throw error;
   }
-}
-// Password Reset 
+};
+
+// Password Reset
 export const forgotPassword = async (email: string): Promise<void> => {
   try {
     await sendPasswordResetEmail(auth, email);
     console.log("Password reset email sent successfully.");
   } catch (error: any) {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    console.error("Error Code:", errorCode);
-    console.error("Error Message:", errorMessage);
-    throw error; // Re-throw the error for handling in the calling function
+    console.error("Error during password reset:", error);
+    throw error;
   }
 };
-
-
 
 // Fetch subscription state from the database
 export const fetchSubscriptionState = createAsyncThunk(
@@ -201,5 +193,3 @@ export const fetchSubscriptionState = createAsyncThunk(
     }
   }
 );
-
-

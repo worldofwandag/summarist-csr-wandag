@@ -9,6 +9,7 @@ import { toggleSavedState } from "@/app/redux/librarySlice"; // Import the toggl
 import Modal from "@/app/components/Modal";
 import { openLoginModal } from "@/app/redux/modalSlice";
 import { useParams, useRouter } from "next/navigation"; // For routing
+import Link from "next/link";
 
 function Page() {
   const { id } = useParams() as { id: string };
