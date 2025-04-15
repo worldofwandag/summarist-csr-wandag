@@ -20,7 +20,7 @@ import {
   guestLogin,
 } from "../utility/auth";
 
-import { fetchSubscriptionState } from "../utility/auth";
+import { fetchSubscriptionState } from "../utility/subscriptionService"; // Update the import path
 
 export default function Modal() {
   const modalContentRef = useRef<HTMLDivElement | null>(null);

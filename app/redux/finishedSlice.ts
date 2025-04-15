@@ -8,6 +8,7 @@ interface Book {
   author: string;
   subTitle: string;
   averageRating: number;
+  duration: string; // Add the duration property
 }
 
 interface FinishedState {
@@ -20,13 +21,13 @@ const initialState: FinishedState = {
 
 const finishedSlice = createSlice({
   name: "finished",
-  initialState, // Use the correct initial state
+  initialState: {
+    finishedBooks: {} as { [id: string]: Book },
+  },
   reducers: {
     markAsFinished: (state, action: PayloadAction<Book>) => {
-      const { id, audioLink, imageLink, title, author, subTitle, averageRating } = action.payload;
-
-      // Add the book to the finishedBooks object using the ID as the key
-      state.finishedBooks[id] = { id, audioLink, imageLink, title, author, subTitle, averageRating };
+      const book = action.payload;
+      state.finishedBooks[book.id] = book;
     },
     clearFinishedBooks: (state) => {
       state.finishedBooks = {}; // Clear all finished books
@@ -35,8 +36,14 @@ const finishedSlice = createSlice({
       // Replace the current finishedBooks state with the loaded data
       state.finishedBooks = action.payload;
     },
+    updateFinishedBookDuration: (state, action: PayloadAction<{ id: string; duration: string }>) => {
+      const { id, duration } = action.payload;
+      if (state.finishedBooks[id]) {
+        state.finishedBooks[id].duration = duration;
+      }
+    },
   },
 });
 
-export const { markAsFinished, clearFinishedBooks, loadFinishedBooks } = finishedSlice.actions;
+export const { markAsFinished, clearFinishedBooks, loadFinishedBooks, updateFinishedBookDuration } = finishedSlice.actions;
 export default finishedSlice.reducer;

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { UserTypes } from "../types/UserTypes";
-import { fetchSubscriptionState } from "../utility/auth";
+import { fetchSubscriptionState } from "../utility/subscriptionService"; // Update the import path
 
 // Define the UserState interface
 interface UserState {

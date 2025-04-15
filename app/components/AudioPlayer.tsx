@@ -5,6 +5,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/app/redux/store";
 import { openLoginModal } from "@/app/redux/modalSlice";
 import { markAsFinished } from "@/app/redux/finishedSlice";
+import { updateBookDuration } from "@/app/redux/librarySlice"; // Import the action
+import { formatTime } from "@/app/utility/formatTime"; // Import the time formatting utility
 
 interface AudioPlayerProps {
   audioLink: string;
@@ -24,7 +26,7 @@ export default function AudioPlayer({
   author,
   bookId,
   subTitle,
-  averageRating, 
+  averageRating,
   isLoading,
 }: AudioPlayerProps) {
   const dispatch = useDispatch<AppDispatch>();
@@ -86,10 +88,14 @@ export default function AudioPlayer({
     }
   };
 
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      const audioDuration = audioRef.current.duration;
+      setDuration(audioDuration);
+
+      // Dispatch the duration to Redux
+      dispatch(updateBookDuration({ id: bookId, duration: formatTime(audioDuration) }));
+    }
   };
 
   const handleAudioEnd = () => {
@@ -102,6 +108,7 @@ export default function AudioPlayer({
         author,
         subTitle,
         averageRating,
+        duration: formatTime(duration), // Pass the formatted duration
       })
     );
   };
@@ -127,9 +134,7 @@ export default function AudioPlayer({
         onTimeUpdate={() =>
           setCurrentTime(audioRef.current ? audioRef.current.currentTime : 0)
         }
-        onLoadedMetadata={() =>
-          setDuration(audioRef.current ? audioRef.current.duration : 0)
-        }
+        onLoadedMetadata={handleLoadedMetadata} // Trigger when metadata is loaded
       ></audio>
 
       {isLoading ? (

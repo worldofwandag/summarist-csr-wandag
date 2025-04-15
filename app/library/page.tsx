@@ -1,28 +1,62 @@
 "use client";
 
 import React from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/app/redux/store";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "@/app/redux/store";
 import Link from "next/link"; // Import Link for client-side navigation
-import { BookTypes } from "@/app/utility/bookTypes"; // Import BookTypes for TypeScript
+import { updateBookDuration } from "@/app/redux/librarySlice"; // Import the action
+import { updateFinishedBookDuration } from "@/app/redux/finishedSlice"; // Import the action for finished books
+import { formatTime } from "@/app/utility/formatTime"; // Import the time formatting utility
 
 const Page = () => {
-  const savedBooks = useSelector((state: RootState) => state.library.savedBooks); // Get saved books from Redux
-  const finishedBooks = useSelector((state: RootState) => state.finished.finishedBooks); // Get finished books from Redux
+  const savedBooks = useSelector(
+    (state: RootState) => state.library.savedBooks
+  ); // Get saved books from Redux
+  const finishedBooks = useSelector(
+    (state: RootState) => state.finished.finishedBooks
+  ); // Get finished books from Redux
   const savedBookList = Object.values(savedBooks); // Convert savedBooks object to an array
   const finishedBookList = Object.values(finishedBooks); // Convert finishedBooks object to an array
+  const dispatch = useDispatch<AppDispatch>();
+
+  const handleLoadedMetadata = (
+    audioElement: HTMLAudioElement,
+    bookId: string,
+    isFinished: boolean
+  ) => {
+    const audioDuration = audioElement.duration;
+
+    if (isFinished) {
+      // Update duration for finished books
+      dispatch(
+        updateFinishedBookDuration({
+          id: bookId,
+          duration: formatTime(audioDuration),
+        })
+      );
+    } else {
+      // Update duration for saved books
+      dispatch(
+        updateBookDuration({ id: bookId, duration: formatTime(audioDuration) })
+      );
+    }
+  };
 
   return (
     <div className="wrapper">
       <div className="row">
         <div className="container">
           <div className="for-you__title">Saved Books</div>
-          <div className="for-you__sub--title">{savedBookList.length} items</div>
+          <div className="for-you__sub--title">
+            {savedBookList.length} items
+          </div>
 
           {/* DEFAULT STATE WITHOUT SAVED BOOKS */}
           {savedBookList.length === 0 && (
             <div className="finished__books--block-wrapper">
-              <div className="finished__books--title">Save your favorite books!</div>
+              <div className="finished__books--title">
+                Save your favorite books!
+              </div>
               <div className="finished__books--sub-title">
                 When you save a book, it will appear here.
               </div>
@@ -38,7 +72,13 @@ const Page = () => {
                   href={`/book/${book.id}`}
                   className="for-you__recommended--books-link"
                 >
-                  <audio src={book.audioLink}></audio> {/* Use book.audioLink */}
+                  <audio
+                    src={book.audioLink}
+                    onLoadedMetadata={
+                      (e) =>
+                        handleLoadedMetadata(e.currentTarget, book.id, true) // Pass true for finished books
+                    }
+                  ></audio>
                   <figure
                     className="book__image--wrapper"
                     style={{ marginBottom: "8px" }}
@@ -52,7 +92,9 @@ const Page = () => {
                   </figure>
                   <div className="recommended__book--title">{book.title}</div>
                   <div className="recommended__book--author">{book.author}</div>
-                  <div className="recommended__book--sub-title">{book.subTitle}</div>
+                  <div className="recommended__book--sub-title">
+                    {book.subTitle}
+                  </div>
                   <div className="recommended__book--details-wrapper">
                     <div className="recommended__book--details">
                       <div className="recommended__book--details-icon">
@@ -69,7 +111,9 @@ const Page = () => {
                           <path d="M13 7h-2v6h6v-2h-4z"></path>
                         </svg>
                       </div>
-                      <div className="recommended__book--details-text">04:52</div>
+                      <div className="recommended__book--details-text">
+                        {savedBooks[book.id]?.duration || "Loading..."}
+                      </div>
                     </div>
                     <div className="recommended__book--details">
                       <div className="recommended__book--details-icon">
@@ -96,7 +140,9 @@ const Page = () => {
           )}
 
           <div className="for-you__title">Finished</div>
-          <div className="for-you__sub--title">{finishedBookList.length} items</div>
+          <div className="for-you__sub--title">
+            {finishedBookList.length} items
+          </div>
 
           {/* FINISHED BOOKS initial state */}
           {finishedBookList.length === 0 && (
@@ -117,7 +163,13 @@ const Page = () => {
                   href={`/book/${book.id}`}
                   className="for-you__recommended--books-link"
                 >
-                  <audio src={book.audioLink}></audio> {/* Use book.audioLink */}
+                  <audio
+                    src={book.audioLink}
+                    onLoadedMetadata={
+                      (e) =>
+                        handleLoadedMetadata(e.currentTarget, book.id, true) // Pass true for finished books
+                    }
+                  ></audio>
                   <figure
                     className="book__image--wrapper"
                     style={{ marginBottom: "8px" }}
@@ -131,7 +183,9 @@ const Page = () => {
                   </figure>
                   <div className="recommended__book--title">{book.title}</div>
                   <div className="recommended__book--author">{book.author}</div>
-                  <div className="recommended__book--sub-title">{book.subTitle}</div>
+                  <div className="recommended__book--sub-title">
+                    {book.subTitle}
+                  </div>
                   <div className="recommended__book--details-wrapper">
                     <div className="recommended__book--details">
                       <div className="recommended__book--details-icon">
@@ -144,11 +198,13 @@ const Page = () => {
                           width="1em"
                           xmlns="http://www.w3.org/2000/svg"
                         >
-                          <path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"></path>
+                          <path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8.3.589 8 8-3.589 8-8 8z"></path>
                           <path d="M13 7h-2v6h6v-2h-4z"></path>
                         </svg>
                       </div>
-                      <div className="recommended__book--details-text">04:52</div>
+                      <div className="recommended__book--details-text">
+                        {finishedBooks[book.id]?.duration || "Loading..."}
+                      </div>
                     </div>
                     <div className="recommended__book--details">
                       <div className="recommended__book--details-icon">

@@ -1,9 +1,12 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookTypes } from "../utility/bookTypes";
-import { useSelector } from "react-redux";
-import { RootState } from "../redux/store";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../redux/store";
+import { updateBookDuration } from "../redux/librarySlice"; // Import the action
+import { formatTime } from "../utility/formatTime"; // Import the time formatting utility
 
 export default function Suggested() {
   const [books, setBooks] = useState<BookTypes[]>([]); // State to store books
@@ -15,6 +18,8 @@ export default function Suggested() {
   const isPlusSubscribed = useSelector(
     (state: RootState) => state.user.isPlusSubscribed
   ); // Check if user is plus subscribed
+  const savedBooks = useSelector((state: RootState) => state.library.savedBooks); // Access saved books from Redux
+  const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -33,6 +38,11 @@ export default function Suggested() {
 
     fetchBooks();
   }, []);
+
+  const handleLoadedMetadata = (audioElement: HTMLAudioElement, bookId: string) => {
+    const audioDuration = audioElement.duration;
+    dispatch(updateBookDuration({ id: bookId, duration: formatTime(audioDuration) }));
+  };
 
   return (
     <div>
@@ -116,7 +126,12 @@ export default function Suggested() {
                       Premium
                     </div>
                   )}
-                <audio src={book.audioLink}></audio>
+                <audio
+                  src={book.audioLink}
+                  onLoadedMetadata={(e) =>
+                    handleLoadedMetadata(e.currentTarget, book.id)
+                  }
+                ></audio>
                 <figure className="book__image--wrapper">
                   <img src={book.imageLink} alt={book.title}></img>
                 </figure>
@@ -141,7 +156,9 @@ export default function Suggested() {
                         <path d="M13 7h-2v6h6v-2h-4z"></path>
                       </svg>
                     </div>
-                    <div className="recommended__book--details-text">03:24</div>
+                    <div className="recommended__book--details-text">
+                      {savedBooks[book.id]?.duration || "Loading..."}
+                    </div>
                   </div>
                   <div className="recommended__book--details">
                     <div className="recommended__book--details-icon">

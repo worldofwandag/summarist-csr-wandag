@@ -1,25 +1,27 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { BookTypes } from "@/app/utility/bookTypes"; //for TS
+import React, { useEffect, useState, useRef } from "react";
+import { BookTypes } from "@/app/utility/bookTypes"; // For TypeScript
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "@/app/redux/store"; //for TS
-// import { use } from "next/navigation"; // Valid in Next.js Server Components
-import { toggleSavedState } from "@/app/redux/librarySlice"; // Import the toggle action
+import { AppDispatch, RootState } from "@/app/redux/store"; // For TypeScript
+import { toggleSavedState, updateBookDuration } from "@/app/redux/librarySlice"; // Import the toggle and duration actions
 import Modal from "@/app/components/Modal";
 import { openLoginModal } from "@/app/redux/modalSlice";
 import { useParams, useRouter } from "next/navigation"; // For routing
-import Link from "next/link";
+import { formatTime } from "@/app/utility/formatTime"; // Import the time formatting utility
 
 function Page() {
   const { id } = useParams() as { id: string };
   const [book, setBook] = useState<BookTypes | null>(null); // State to store book data
   const [isLoading, setIsLoading] = useState(true); // State to track loading
+  const [currentTime, setCurrentTime] = useState(0); // State for current audio time
+  const [duration, setDuration] = useState(0); // State for total audio duration
+  const audioRef = useRef<HTMLAudioElement | null>(null); // Ref for the audio element
+
   const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn); // Check if user is logged in
   const isSaved = useSelector(
     (state: RootState) => state.library.savedBooks[id]
-  );
-  // Check if the book is saved
+  ); // Check if the book is saved
   const isSubscribed = useSelector(
     (state: RootState) => state.user.isSubscribed
   ); // Check if user is subscribed
@@ -45,16 +47,43 @@ function Page() {
           throw new Error("Failed to fetch book data");
         }
         const data = await response.json();
-        setBook(data); // Update state with fetched book data
+        console.log("Fetched book data:", data); // Debug log
+        setBook(data);
+
+        // Dispatch duration to Redux store if it exists
+        if (data.duration) {
+          dispatch(
+            updateBookDuration({ id: data.id, duration: data.duration })
+          );
+        }
       } catch (error) {
         console.error("Error fetching book:", error);
       } finally {
-        setIsLoading(false); // Set loading state to false
+        setIsLoading(false);
       }
     };
 
     fetchBook();
-  }, [id]);
+  }, [id, dispatch]);
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      const audioDuration = audioRef.current.duration;
+      setDuration(audioDuration);
+  
+      // Dispatch the duration to Redux
+      dispatch(updateBookDuration({ id, duration: formatTime(audioDuration) }));
+  
+      // Optionally update the local book state
+      setBook((prevBook) => prevBook ? { ...prevBook, duration: formatTime(audioDuration) } : null);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
 
   if (isLoading) {
     // Skeleton loading state
@@ -182,13 +211,13 @@ function Page() {
     );
   }
 
-  const handleOpenLoginModal = () => {
-    dispatch(openLoginModal()); // Dispatch the action to open the login modal
-  };
-
   if (!book) {
     return null; // Or a fallback UI
   }
+
+  const handleOpenLoginModal = () => {
+    dispatch(openLoginModal()); // Dispatch the action to open the login modal
+  };
 
   const handleReadOrListen = () => {
     if (!book) {
@@ -227,7 +256,12 @@ function Page() {
       {loginModalOpen && <Modal />}
 
       <div className="row">
-        <audio src={book.audioLink}></audio>
+        <audio
+          ref={audioRef}
+          src={book.audioLink}
+          onLoadedMetadata={handleLoadedMetadata} // Attach handleLoadedMetadata
+          onTimeUpdate={handleTimeUpdate} // Attach handleTimeUpdate
+        ></audio>
         <div className="container">
           <div className="inner__wrapper">
             <div className="inner__book">
@@ -277,7 +311,7 @@ function Page() {
                         <path d="M686.7 638.6L544.1 535.5V288c0-4.4-3.6-8-8-8H488c-4.4 0-8 3.6-8 8v275.4c0 2.6 1.2 5 3.3 6.5l165.4 120.6c3.6 2.6 8.6 1.8 11.2-1.7l28.6-39c2.6-3.7 1.8-8.7-1.8-11.2z"></path>
                       </svg>
                     </div>
-                    <div className="inner-book__duration">03:22</div>
+                    <div className="inner-book__duration">{book.duration}</div>
                   </div>
                   <div className="inner-book__description">
                     <div className="inner-book__icon">

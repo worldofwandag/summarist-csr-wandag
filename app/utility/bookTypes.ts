@@ -15,4 +15,5 @@ export interface BookTypes {
     tags: string[];
     bookDescription: string;
     authorDescription: string;
+    duration: string;
   }

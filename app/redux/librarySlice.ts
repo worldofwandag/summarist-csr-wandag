@@ -8,6 +8,7 @@ interface Book {
   author: string;
   subTitle: string;
   averageRating: number;
+  duration: string; 
 }
 
 interface LibraryState {
@@ -20,7 +21,9 @@ const initialState: LibraryState = {
 
 const librarySlice = createSlice({
   name: "library",
-  initialState,
+  initialState: {
+    savedBooks: {} as { [id: string]: Book },
+  },
   reducers: {
     // Toggle the saved state of a book
     toggleSavedState: (state, action: PayloadAction<Book>) => {
@@ -57,6 +60,12 @@ const librarySlice = createSlice({
     clearSavedBooks: (state) => {
       state.savedBooks = {}; // Clear the savedBooks state
     },
+    updateBookDuration: (state, action: PayloadAction<{ id: string; duration: string }>) => {
+      const { id, duration } = action.payload;
+      if (state.savedBooks[id]) {
+        state.savedBooks[id].duration = duration;
+      }
+    },
   },
 });
 
@@ -66,5 +75,6 @@ export const {
   removeBook,
   loadSavedBooks,
   clearSavedBooks,
+  updateBookDuration
 } = librarySlice.actions;
 export default librarySlice.reducer;
