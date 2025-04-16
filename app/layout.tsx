@@ -82,9 +82,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${roboto.className}`}>
         <Provider store={store}>
+        
           <BarComponents />
           {children}
+          
         </Provider>
+        
       </body>
     </html>
   );

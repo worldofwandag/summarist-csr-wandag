@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { forwardRef } from "react";
 import logo from "../assets/logo.png";
 import Image from "next/image";
 import Modal from "./Modal";
@@ -10,43 +10,57 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { setFontSize } from "../redux/fontSizeSlice";
 
-function Sidebar(): React.JSX.Element {
+interface SidebarProps {
+  onLinkClick: () => void; // Function to handle link clicks
+}
+
+const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ onLinkClick }, ref) => {
   const dispatch = useDispatch<AppDispatch>();
+
   // Access Redux state to check if the login modal is open
   const { loginModalOpen } = useSelector((state: RootState) => state.modal);
+
   // Access Redux state to check if the user is logged in
   const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
+
+  // Access Redux state for font size
   const fontSize = useSelector((state: RootState) => state.fontSize);
 
+  // Get the current pathname
+  const pathname = usePathname() || "";
+
+  // Handle font size change
   const handleFontSizeChange = (size: string) => {
     dispatch(setFontSize(size)); // Update font size in Redux store
   };
 
-  const pathname = usePathname() || ""; // Used to show font size changer only on player page and shift the sidebar up only on player page
-
+  // Handle user logout
   const handleLogoutUser = async () => {
     try {
       await logoutUser(dispatch); // Dispatch the logoutUser function
       console.log("User logged out successfully.");
+      onLinkClick(); // Close the sidebar after logout
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
+  // Handle opening the login modal
   const handleOpenLoginModal = () => {
     dispatch(openLoginModal()); // Dispatch the action to open the login modal
+    onLinkClick(); // Close the sidebar after opening the login modal
   };
 
   return (
     <>
       {loginModalOpen && <Modal />}
-      <div className="sidebar sidebar--closed">
+      <div ref={ref} className="sidebar">
         <div className="sidebar__logo">
           <Image src={logo} width={0} height={0} alt="logo" />
         </div>
         <div className="sidebar__wrapper">
           <div className="sidebar__top">
-            <Link href="/for-you" className="sidebar__link--wrapper">
+            <Link href="/for-you" className="sidebar__link--wrapper" onClick={onLinkClick}>
               <div className="sidebar__link--line active--tab"></div>
               <div className="sidebar__icon--wrapper">
                 <svg
@@ -64,7 +78,7 @@ function Sidebar(): React.JSX.Element {
               <div className="sidebar__link--text">For you</div>
             </Link>
 
-            <Link href="/library" className="sidebar__link--wrapper">
+            <Link href="/library" className="sidebar__link--wrapper" onClick={onLinkClick}>
               <div className="sidebar__link--line "></div>
               <div className="sidebar__icon--wrapper">
                 <svg
@@ -234,7 +248,7 @@ function Sidebar(): React.JSX.Element {
           }}
           >
             
-            <Link href={`/settings`} className="sidebar__link--wrapper">
+            <Link href={`/settings`} className="sidebar__link--wrapper" onClick={onLinkClick}>
               <div className="sidebar__link--line "></div>
               <div className="sidebar__icon--wrapper">
                 <svg
@@ -314,5 +328,6 @@ function Sidebar(): React.JSX.Element {
       </div>
     </>
   );
-}
+});
+
 export default Sidebar;

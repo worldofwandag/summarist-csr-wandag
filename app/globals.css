@@ -739,6 +739,7 @@ SEARCH BAR
 .sidebar__toggle--btn svg {
   width: 24px;
   height: 24px;
+  z-index: 11;
 }
 .search,
 .search__input--wrapper {
@@ -870,6 +871,17 @@ SIDEBAR
   z-index: 1000;
   transition: all 0.3s;
 }
+/* .sidebar--open {
+  background-color: #f7faf9;
+  width: 200px;
+  min-width: 200px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+  transition: all 0.3s;
+} */
 .sidebar__wrapper {
   display: flex;
   flex-direction: column;
@@ -975,15 +987,28 @@ SIDEBAR
 .sidebar__font--size-icon--active {
   border-bottom: 3px solid #2bd97c;
 }
+
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
   }
+  .sidebar--open {
+    background-color: #f7faf9;
+    width: 80%;
+    min-width: 200px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(0);
+    transition: all 0.3s;
+  }
 }
-.sidebar--opened {
+/* .sidebar--opened {
   transform: translateX(0);
   width: 80%;
-}
+} */
 
 /* 
 
@@ -1895,7 +1920,7 @@ CHOOSE PLAN
 .collapse {
   /* overflow: hidden; */
   max-height: 0; /* Collapse the content */
-  
+
   transition: max-height 0.35s ease, padding 0.35s ease; /* Smooth transition */
   will-change: max-height, padding; /* Optimize rendering */
 }
@@ -1903,7 +1928,7 @@ CHOOSE PLAN
 .show {
   /* overflow: hidden; */
   max-height: 500px; /* Set a large enough max-height to accommodate the content */
-  
+
   transition: max-height 1.2s ease, padding 0.35s ease; /* Smooth transition */
   will-change: max-height, padding; /* Optimize rendering */
 }
@@ -2030,15 +2055,6 @@ SEARCH BAR RESULTS
 }
 .search__book--img {
   width: 100%;
-}
-@media (max-width: 768px) {
-  .sidebar__toggle--btn {
-    display: flex;
-  }
-  .search__books--wrapper {
-    max-width: unset;
-    right: 0;
-  }
 }
 
 /* 
