@@ -92,7 +92,7 @@ const BarComponents: React.FC = () => {
           className="sidebar__toggle--btn"
           onClick={handleToggleSidebar}
         >
-          Toggle Sidebar
+          
         </button>
       )}
     </>
