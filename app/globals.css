@@ -1693,6 +1693,30 @@ PLAYER
   }
 }
 
+@media (max-width: 768px) {
+  .audio__wrapper {
+    height: 180px;
+    padding: 16px 24px;
+    flex-direction: column;
+  }
+  .audio__wrapper > div {
+    width: 100%;
+    justify-content: center;
+  }
+  .audio__track--image-mask {
+    max-width: 80px;
+  }
+  .audio__book--summary-title {
+    font-size: 20px;
+  }
+  .audio__book--summary-text {
+    font-size: 14px;
+  }
+  .summary {
+    height: calc(100vh - 260px);
+  }
+}
+
 /* 
 
 CHOOSE PLAN

@@ -51,6 +51,8 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ onLinkClick }, ref) 
     onLinkClick(); // Close the sidebar after opening the login modal
   };
 
+  
+
   return (
     <>
       {loginModalOpen && <Modal />}
@@ -242,12 +244,17 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(({ onLinkClick }, ref) 
           </div>
 
           {/* BOTTOM BAR START */}
-          <div className="sidebar__bottom"
-          style={{
-            marginBottom: pathname.startsWith("/player/") ? "80px" : "0", // Shift up by 64px on /player/[id]
-          }}
-          >
-            
+          <div
+  className="sidebar__bottom"
+  style={{
+    marginBottom:
+      pathname.startsWith("/player/")
+        ? window.innerWidth <= 768
+          ? "180px" // Add more margin when screen width is 768px or below
+          : "80px" // Default margin for /player/[id]
+        : "0", // No margin for other paths
+  }}
+>
             <Link href={`/settings`} className="sidebar__link--wrapper" onClick={onLinkClick}>
               <div className="sidebar__link--line "></div>
               <div className="sidebar__icon--wrapper">
