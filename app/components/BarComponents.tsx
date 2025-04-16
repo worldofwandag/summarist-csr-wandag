@@ -16,8 +16,8 @@ const BarComponents: React.FC = () => {
   const overlayRef = useRef<HTMLDivElement | null>(null);
 
   // Function to toggle Sidebar visibility
-  const handleToggleSidebar = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation(); // Prevent the click from propagating to other handlers
+  const handleToggleSidebar = () => {
+    
 
     if (sidebarRef.current) {
       if (sidebarRef.current.classList.contains("sidebar")) {
