@@ -3,7 +3,7 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/app/redux/store";
-import Link from "next/link"; // Import Link for client-side navigation
+import Link from "next/link"; 
 import { updateBookDuration } from "@/app/redux/librarySlice"; // Import the action
 import { updateFinishedBookDuration } from "@/app/redux/finishedSlice"; // Import the action for finished books
 import { formatTime } from "@/app/utility/formatTime"; // Import the time formatting utility

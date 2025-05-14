@@ -161,31 +161,7 @@ const Page = () => {
       alert("Something went wrong. Please try again.");
     }
 
-    //   setTimeout(async () => {
-    //     const stripe = await loadStripe(
-    //       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-    //     );
-
-    //     if (!stripe) {
-    //       throw new Error("Stripe failed to load.");
-    //     }
-
-    //     // Redirect to Stripe Checkout in the same window
-    //     await stripe.redirectToCheckout({ sessionId });
-    //   }, 500); // Small delay
-    // } catch (error) {
-    //   console.error("Error during checkout:", error);
-    //   alert("Something went wrong. Please try again.");
-    // }
-    // Temporary workaround: Update Redux state and persist it BEGINNING
-    // if (activePlan === "premium plus annual") {
-    //   dispatch(setPlusSubscribed(true));
-    // } else if (activePlan === "premium monthly") {
-    //   dispatch(setSubscribed(true));
-    // }
-    // Temporary workaround: Update Redux state and persist it END
-
-    // Delay the Stripe Checkout redirection to ensure Redux state updates
+   
   };
 
   return (

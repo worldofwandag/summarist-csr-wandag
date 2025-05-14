@@ -30,10 +30,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       } catch (error) {
         console.error("Failed to fetch book:", error);
       } finally {
-        // Simulate a loading delay of 400ms
+        // Simulate a loading delay of 100ms
         setTimeout(() => {
           setIsLoading(false); // Ensure loading state is updated after the delay
-        }, 400);
+        }, 100);
       }
     };
 
